@@ -23,6 +23,8 @@ class MultiMeasurementUnitTOF(VL53L0X):
         self._range_allowed = None
         self._max_range = None
         self._min_range = None
+        self._last_range = None
+        self._range_has_changed = False
 
     @property
     def units(self):
@@ -89,26 +91,24 @@ class MultiMeasurementUnitTOF(VL53L0X):
     def range_centimeters(self):
         return self.range / 10
 
-    def print_continuously(self):
-        def range_has_changed():
-            changed = False
-            if last_range != self.range:
-                if type(last_range) in [int, float]:
-                    range_diff = abs(last_range - self.converted_range)
-                    if range_diff > self.range_allowed:
-                        changed = True
-            return changed
+    @property
+    def range_has_changed(self):
+        self._range_has_changed = False
+        if self._last_range != self.range:
+            if type(self._last_range) in [int, float]:
+                range_diff = abs(self._last_range - self.converted_range)
+                if range_diff > self.range_allowed:
+                    self._range_has_changed = True
+        return self._range_has_changed
 
+    def print_continuously(self):
         printed_range = None
         printed_nothing_detected = None
-        last_range = None
 
         while True:
-            range_changed = range_has_changed()
-
-            if self.converted_range < self.max_range and (not printed_range or range_changed):
+            if self.converted_range < self.max_range and (not printed_range or self.range_has_changed):
                 print(f"current range is {self.converted_range} {self.units}")
-                last_range = self.converted_range
+                self._last_range = self.converted_range
                 printed_range = True
                 printed_nothing_detected = False
             elif self.max_range <= self.converted_range and not printed_nothing_detected:
@@ -121,5 +121,4 @@ class MultiMeasurementUnitTOF(VL53L0X):
 if __name__ == "__main__":
     i2c = busio.I2C(board.GP1, board.GP0)  # uses board.SCL and board.SDA
     tof = MultiMeasurementUnitTOF(units='cm', i2c=i2c)
-    # tof.print_continuously()
-    print(tof.converted_range, tof.units)
+    tof.print_continuously()
