@@ -137,6 +137,10 @@ class MultiMeasurementUnitTOF(VL53L0X):
         while True:
             if self.converted_range < self.max_range and (not printed_range or self.range_has_changed):
                 print(f"current range is {self.converted_range} {self.units}")
+                # FIXME: this makes reading MUCH slower
+                if self.is_continuous_mode:
+                    if self.use_led:
+                        self.blink_led()
                 self._last_range = self.converted_range
                 printed_range = True
                 printed_nothing_detected = False
