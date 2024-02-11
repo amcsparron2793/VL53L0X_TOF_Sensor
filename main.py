@@ -165,8 +165,8 @@ if __name__ == "__main__":
         if r and tof.range_has_changed:
             print(r, tof.units)
         else:
-            # this never stops printing if r != True
-            if tof.range_has_changed:
+            # FIXME this never stops printing if r != True
+            if tof.range_has_changed: # TODO: and not tof._printed_nothing_detected:
                 print("no reading")
         sleep(0.2)
 
