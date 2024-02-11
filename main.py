@@ -36,6 +36,9 @@ class MultiMeasurementUnitTOF(VL53L0X):
         self._last_range = None
         self._range_has_changed = False
 
+        self._printed_range = None
+        self._printed_nothing_detected = None
+
     @classmethod
     def AskForUnits(cls, i2c):
         while True:
@@ -53,7 +56,6 @@ class MultiMeasurementUnitTOF(VL53L0X):
             self.status_led.off()
             sleep(sleep_time)
             blinks += 1
-
 
     @property
     def units(self):
@@ -131,19 +133,18 @@ class MultiMeasurementUnitTOF(VL53L0X):
         return self._range_has_changed
 
     def print_continuously(self):
-        printed_range = None
-        printed_nothing_detected = None
-
         while True:
-            if self.converted_range < self.max_range and (not printed_range or self.range_has_changed):
+            if self.converted_range < self.max_range and (not self._printed_range or self.range_has_changed):
                 print(f"current range is {self.converted_range} {self.units}")
                 self._last_range = self.converted_range
-                printed_range = True
-                printed_nothing_detected = False
-            elif self.max_range <= self.converted_range and not printed_nothing_detected:
+
+                self._printed_range = True
+                self._printed_nothing_detected = False
+            elif self.max_range <= self.converted_range and not self._printed_nothing_detected:
                 print(f"nothing detected or object is outside of detectable range ({self.min_range}-{self.max_range} {self.units}).")
-                printed_nothing_detected = True
-                printed_range = False
+
+                self._printed_nothing_detected = True
+                self._printed_range = False
             sleep(0.2)
 
 
