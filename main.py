@@ -132,6 +132,13 @@ class MultiMeasurementUnitTOF(VL53L0X):
                     self._range_has_changed = True
         return self._range_has_changed
 
+    def get_range(self):
+        if self.converted_range < self.max_range: #and self.range_has_changed:
+            self._last_range = self.converted_range
+            return self.converted_range
+        elif self.max_range <= self.converted_range:
+            return None
+
     def print_continuously(self):
         while True:
             if self.converted_range < self.max_range and (not self._printed_range or self.range_has_changed):
@@ -152,4 +159,14 @@ if __name__ == "__main__":
     print("Starting TOF Sensor")
     i2c = busio.I2C(board.GP1, board.GP0)  # uses board.SCL and board.SDA
     tof = MultiMeasurementUnitTOF(units='mm', i2c=i2c)  # MultiMeasurementUnitTOF.GetUnits(i2c=i2c)
-    tof.print_continuously()
+    #tof.print_continuously()
+    while True:
+        r = tof.get_range() #.print_continuously()
+        if r and tof.range_has_changed:
+            print(r, tof.units)
+        else:
+            # this never stops printing if r != True
+            if tof.range_has_changed:
+                print("no reading")
+        sleep(0.2)
+
