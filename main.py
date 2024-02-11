@@ -9,22 +9,51 @@ basics for VL53L0X Time Of Flight sensor
 from time import sleep
 import board
 import busio
+from machine import Pin
 
 from adafruit_vl53l0x import VL53L0X
 
 
 class MultiMeasurementUnitTOF(VL53L0X):
-    valid_units = ['in', 'mm', 'cm']
+    # this is a class attribute
+    valid_units = ['mm', 'cm', 'in']
 
-    def __init__(self, units: str = None, *args, **kwargs):
+    def __init__(self, units: str = None, use_led=True, status_led=Pin(25, Pin.OUT), *args, **kwargs):
+        if use_led:
+            self.use_led = use_led
+        if status_led:
+            self.status_led = status_led
         if units:
             self._units = units
+        else:
+            self._units = self.valid_units[0]
+
         super().__init__(*args, **kwargs)
+
         self._range_allowed = None
         self._max_range = None
         self._min_range = None
         self._last_range = None
         self._range_has_changed = False
+
+    @classmethod
+    def AskForUnits(cls, i2c):
+        while True:
+            u = input(f"please enter your chosen unit {[x for x in cls.valid_units]}: ")
+            if u.lower() in cls.valid_units:
+                return cls(units=u.lower(), i2c=i2c)
+            else:
+                print("please choose a valid unit")
+
+    def blink_led(self, sleep_time: float = 0.5, blink_number=3):
+        blinks = 0
+        while blinks < blink_number:
+            self.status_led.on()
+            sleep(sleep_time)
+            self.status_led.off()
+            sleep(sleep_time)
+            blinks += 1
+
 
     @property
     def units(self):
@@ -119,6 +148,7 @@ class MultiMeasurementUnitTOF(VL53L0X):
 
 
 if __name__ == "__main__":
+    print("Starting TOF Sensor")
     i2c = busio.I2C(board.GP1, board.GP0)  # uses board.SCL and board.SDA
-    tof = MultiMeasurementUnitTOF(units='cm', i2c=i2c)
+    tof = MultiMeasurementUnitTOF(units='mm', i2c=i2c)  # MultiMeasurementUnitTOF.GetUnits(i2c=i2c)
     tof.print_continuously()
